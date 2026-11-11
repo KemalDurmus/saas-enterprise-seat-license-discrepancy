@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="{{ hq_lang() }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_title }}{% endblock %}</title>
+  <meta name="description" content="{{ tagline }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="/">{{ app_title }}</a>
+      <span class="muted">{{ tagline }}</span>
+    </div>
+  </header>
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <section class="container hq-cta">
+    <div class="card hq-cta-card hq-buy">
+      <div>
+        <h3>{{ hq_t('buy_title') }}{% if hq_price %} · {{ hq_price }}{% endif %}</h3>
+        <p class="muted">{{ hq_t('buy_text') }}</p>
+      </div>
+      <form method="post" action="/_hq/buy" class="hq-inline">
+        <input type="email" name="email" placeholder="{{ hq_t('email_ph') }}" required>
+        <button type="submit">{{ hq_t('buy_btn') }}</button>
+      </form>
+    </div>
+    <div class="card hq-cta-card">
+      <div>
+        <h3>{{ hq_t('wl_title') }}</h3>
+        <p class="muted">{{ hq_t('wl_text') }}</p>
+      </div>
+      <form method="post" action="/_hq/waitlist" class="hq-inline">
+        <input type="email" name="email" placeholder="{{ hq_t('email_ph') }}" required>
+        <button type="submit">{{ hq_t('wl_btn') }}</button>
+      </form>
+    </div>
+    <details class="hq-feedback">
+      <summary>{{ hq_t('fb_summary') }}</summary>
+      <form method="post" action="/_hq/feedback">
+        <textarea name="text" rows="3" maxlength="2000" placeholder="{{ hq_t('fb_ph') }}" required></textarea>
+        <input type="email" name="email" maxlength="254" placeholder="{{ hq_t('fb_email_ph') }}">
+        <button type="submit" class="btn-secondary">{{ hq_t('fb_btn') }}</button>
+      </form>
+    </details>
+  </section>
+  <footer class="container footer muted">© {{ app_title }}</footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

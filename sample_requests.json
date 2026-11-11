@@ -1,0 +1,39 @@
+[
+  {
+    "method": "GET",
+    "path": "/",
+    "form_fields": []
+  },
+  {
+    "method": "POST",
+    "path": "/analyze",
+    "form_fields": [
+      {
+        "name": "demo",
+        "value": "1"
+      },
+      {
+        "name": "price",
+        "value": "15"
+      }
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/analyze",
+    "form_fields": [
+      {
+        "name": "stripe_text",
+        "value": "Customer Email,Customer Name,Status,Quantity\nbilling@acme.io,Acme,active,2\nbilling@globex.com,Globex,active,3"
+      },
+      {
+        "name": "users_text",
+        "value": "email,status\nana@acme.io,active\nben@acme.io,active\ncara@acme.io,active\nd@globex.com,active\ne@globex.com,active\nf@globex.com,disabled"
+      },
+      {
+        "name": "price",
+        "value": "10"
+      }
+    ]
+  }
+]

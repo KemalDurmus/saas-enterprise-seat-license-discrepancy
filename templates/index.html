@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ app_title }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='seats.css') }}">{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="card">
+    <h2>Find seats you are not billing for</h2>
+    <p class="muted">Upload a Stripe subscriptions CSV and a user list CSV. Accounts are matched by email domain, and active users are compared with the seat quantity billed. Files are processed in memory and are not stored.</p>
+    <form method="post" action="{{ url_for('feature.analyze') }}" enctype="multipart/form-data" class="seat-form">
+      <div class="grid">
+        <div>
+          <label for="stripe_file"><strong>1. Stripe subscriptions CSV</strong></label>
+          <input type="file" id="stripe_file" name="stripe_file" accept=".csv,text/csv,text/plain">
+          <p class="muted small">Needs columns like <em>Customer Email</em> and <em>Quantity</em> (Status is used if present).</p>
+          <details><summary>Or paste CSV text</summary>
+            <textarea name="stripe_text" rows="5" placeholder="Customer Email,Status,Quantity&#10;billing@acme.io,active,5">{{ form.stripe_text }}</textarea></details>
+        </div>
+        <div>
+          <label for="users_file"><strong>2. User list CSV</strong></label>
+          <input type="file" id="users_file" name="users_file" accept=".csv,text/csv,text/plain">
+          <p class="muted small">Needs an <em>email</em> column. Users marked inactive, disabled or deleted are not counted.</p>
+          <details><summary>Or paste CSV text</summary>
+            <textarea name="users_text" rows="5" placeholder="email,status&#10;ana@acme.io,active">{{ form.users_text }}</textarea></details>
+        </div>
+      </div>
+      <label for="price"><strong>Price per seat (optional)</strong></label>
+      <input type="text" id="price" name="price" inputmode="decimal" placeholder="e.g. 15" value="{{ form.price }}">
+      <p class="muted small">Used only to estimate extra revenue per billing period. Leave empty to skip estimates.</p>
+      <div class="actions">
+        <button class="btn" type="submit">Find discrepancies</button>
+        <button class="btn btn-secondary" type="submit" name="demo" value="1" formnovalidate>Try with sample data</button>
+      </div>
+    </form>
+  </div>
+
+  {% if result %}
+  {% set s = result.summary %}
+  <div class="card">
+    <h2>Results{% if result.demo %} <span class="badge">sample data</span>{% endif %}</h2>
+    <div class="grid">
+      <div class="stat"><strong>{{ s.under }}</strong><br><span class="muted">{{ 'account' if s.under == 1 else 'accounts' }} under-billed</span></div>
+      <div class="stat"><strong>{{ s.missing_seats }}</strong><br><span class="muted">unbilled {{ 'seat' if s.missing_seats == 1 else 'seats' }}</span></div>
+      <div class="stat"><strong>{{ s.nosub }}</strong><br><span class="muted">{{ 'domain' if s.nosub == 1 else 'domains' }} with users but no subscription</span></div>
+      <div class="stat"><strong>{{ s.over }}</strong><br><span class="muted">{{ 'account' if s.over == 1 else 'accounts' }} billed for more seats than used</span></div>
+      {% if s.revenue is not none %}
+      <div class="stat"><strong>{{ '{:,.2f}'.format(s.revenue) }}</strong><br><span class="muted">estimated extra revenue per billing period</span></div>
+      {% endif %}
+    </div>
+
+    {% if result.notes %}
+    <div class="data-notes">
+      <h3>About your data</h3>
+      <ul class="muted small">
+        {% for n in result.notes %}<li>{{ n }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if s.under == 0 %}
+    <div class="verdict">None of the {{ s.total }} matched {{ 'domain is' if s.total == 1 else 'domains are' }} under-billed in this data.</div>
+    {% else %}
+    <p>
+      <a class="btn" download="seat-expansion-opportunities.csv" href="{{ result.data_uri }}">Download under-billed accounts (CSV)</a>
+    </p>
+    {% endif %}
+
+    <table class="seat-table">
+      <thead><tr><th>Domain</th><th>Account</th><th>Billed seats</th><th>Active users</th><th>Difference</th><th>Status</th><th>Est. extra revenue</th></tr></thead>
+      <tbody>
+      {% for r in result.rows %}
+        <tr class="row-{{ r.status }}">
+          <td data-label="Domain">{{ r.domain }}</td>
+          <td data-label="Account">{{ r.name or '—' }}</td>
+          <td data-label="Billed seats">{{ r.billed }}</td>
+          <td data-label="Active users">{{ r.actual }}</td>
+          <td data-label="Difference">{{ '%+d'|format(r.diff) }}</td>
+          <td data-label="Status">
+            {% if r.status == 'under' %}<span class="badge tag-under">Under-billed</span>
+            {% elif r.status == 'nosub' %}<span class="badge tag-nosub">No subscription found</span>
+            {% elif r.status == 'over' %}<span class="badge tag-over">More billed than used</span>
+            {% else %}<span class="badge tag-ok">Matches</span>{% endif %}
+          </td>
+          <td data-label="Est. extra revenue">{% if r.revenue is not none %}{{ '{:,.2f}'.format(r.revenue) }}{% else %}—{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted small">Matching is by email domain only. Domains without a Stripe subscription may be customers billed under a different email domain, so check them manually.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
